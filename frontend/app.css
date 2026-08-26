@@ -1,0 +1,18 @@
+input {
+    display: block;
+    margin-bottom: 10px;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+div {
+  background-color: lightblue;
+  padding: 20px;
+}
