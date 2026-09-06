@@ -25,11 +25,13 @@ form.addEventListener("submit",async (event)=> {
         body : JSON.stringify(loginData)
     });
 
-    const result = await response.text();
-    console.log(result);
+    const result = await response.json();
+    console.log("server response", result);
 
-    if(result == "Login Successful") {
+    if(result.message === "Login Successful") {
+        localStorage.setItem("token", result.token);
         window.location.href = "dashboard.html";
     }
+    
 })
 

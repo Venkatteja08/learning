@@ -1,6 +1,6 @@
 
 
-const form = document.querySelector("#loginForm");
+const form = document.querySelector("#RegistrationForm");
 
 form.addEventListener("submit", async (event)=> {
     event.preventDefault();
