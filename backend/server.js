@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const {MongoClient} = require("mongodb");
+const {MongoClient, ObjectId} = require("mongodb");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -57,7 +57,7 @@ async function startServer() {
                 },
                 JWT_SECRET,
                 {
-                    expiresIn :"10s"
+                    expiresIn :"1hr"
                 }
             )
 
@@ -83,7 +83,7 @@ async function startServer() {
         try {
             const user = jwt.verify(token,JWT_SECRET);
 
-            req.user = user;
+            req.user = user; 
             next();
         }
         catch(error) {
@@ -93,11 +93,24 @@ async function startServer() {
 
     
 
-    app.get("/profile",authenticateToken,(req,res) => {
+    app.get("/profile",authenticateToken, async (req,res) => {
+
+        const user = await userCollection.findOne(
+        {
+            _id : new ObjectId(req.user.userId) //retriving inf from the database and converting it into objectId as in mongo id is of objectId
+        },
+        {
+            projection : {
+                password : 0 // this doesn't send the password to frontend
+            }
+        }
+      );
+
         res.json({
             message : "Access granted",
-            user : req.user
-        })
+            // user : req.user //this is taken from the jwt, we are returning which is present in jwt --- now we search in mongodb using id and return that
+            user : user
+        });
     })
 
     app.get("/orders", authenticateToken, (req,res) => {
