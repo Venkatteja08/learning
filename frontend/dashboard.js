@@ -41,6 +41,15 @@ async function checkLogin() {
     const orderResult = await orderResponse.json();
 
     console.log("orders :",orderResult);
+
+    const adminResponse = await fetch("http://localhost:5000/admin", {
+        headers : {
+            Authorization : `Bearer ${token}`
+        }
+    });
+
+    const adminResult = await adminResponse.json();
+    console.log("adminResponse :",adminResult)
 }
 
 

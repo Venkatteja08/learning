@@ -22,8 +22,14 @@ async function startServer() {
     const userCollection = db.collection("users");
 
     app.post("/users", async (req,res) => {
-        const userData = req.body;
+        // const userData = req.body;
 
+        const userData = {
+            userName : req.body.userName,
+            password : req.body.password,
+            contact : req.body.contact,
+            role : "user"
+        }
         //changes
         const hashedPassword = await bcrypt.hash(userData.password,10);
 
@@ -45,15 +51,21 @@ async function startServer() {
             userName : loginData.userName
         });
 
+        if(!user) {
+            return res.status(401).json({
+                message : "Invalid Username or password"
+            })
+        }
 
-        const passwordMatch = bcrypt.compare(loginData.password,user.password);
+        const passwordMatch = await bcrypt.compare(loginData.password,user.password);
 
         if (passwordMatch) {
             
             const token = jwt.sign(
                 {
                     userId : user._id,
-                    userName : user.userName
+                    userName : user.userName,
+                    role : user.role
                 },
                 JWT_SECRET,
                 {
@@ -67,7 +79,9 @@ async function startServer() {
             });
 
         } else {
-            res.send("Invalid Username or password");
+            res.status(401).json({
+                message : "Invalid username or password"
+            })
         }
 
     })
@@ -78,24 +92,46 @@ async function startServer() {
         const token = authHeader && authHeader.split(" ")[1];
 
         if(!token) {
-            return res.status(401).send("Token required");
+            return res.status(401).send("Token required"); //unauthori
         }
         try {
             const user = jwt.verify(token,JWT_SECRET);
+
+            console.log("authenticated user :", user);
 
             req.user = user; 
             next();
         }
         catch(error) {
-            return res.status(403).send("Invalid or expired token");
+            return res.status(403).send("Invalid or expired token"); //forbidden
         }
     }
+
+    function authenticateAdmin(req,res,next) {
+        if(req.user.role !== "admin") {
+            return res.status(403).json({
+                message : "admin access required"
+            });
+        }
+        next();
+    }
+
+
+
+    app.get("/admin",authenticateToken,authenticateAdmin,(req,res) => {
+        res.json({
+            message : "Welcome Admin",
+            user : req.user.userName
+        });
+    })
 
     
 
     app.get("/profile",authenticateToken, async (req,res) => {
 
-        const user = await userCollection.findOne(
+        try {
+
+            const user = await userCollection.findOne(
         {
             _id : new ObjectId(req.user.userId) //retriving inf from the database and converting it into objectId as in mongo id is of objectId
         },
@@ -104,13 +140,26 @@ async function startServer() {
                 password : 0 // this doesn't send the password to frontend
             }
         }
-      );
+        );
 
-        res.json({
+        if(!user) {
+            return res.status(404).json({
+                message :"user not found"
+            })
+        }
+
+        res.status(200).json({
             message : "Access granted",
             // user : req.user //this is taken from the jwt, we are returning which is present in jwt --- now we search in mongodb using id and return that
             user : user
         });
+
+        }catch(error) {
+            return res.status(500).json({
+                message : "Internal server error"
+            })
+        }
+        
     })
 
     app.get("/orders", authenticateToken, (req,res) => {
