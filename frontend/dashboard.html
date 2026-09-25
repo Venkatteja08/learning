@@ -4,13 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DashBoard</title>
-    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
     <div>
         <h2>Welcome to Dashboard</h2>
         <p id="welcomeMessage">You have successfully logged in.</p>
 
+        <div id="profileDetails"></div>
+
+        <button id="profileBtn">My profile</button>
+
+        <h3>Place orders</h3>
+
+        <input type="text" id="product" placeholder="Product">
+
+        <input type="number" id="quantity" placeholder="Quantity" min="1">
+        <button id="placeOrderBtn">place Order</button>
+
+        <h3>Order List</h3>
+
+        <div id="ordersList"></div>
+
+
+        <button id="ordersBtn">My Orders
+        </button>
+
+        
+        <button id="adminBtn">Admin</button>
+
+
+        <br>
         <button id="logoutBtn">Logout</button>
     </div>
     <script src="dashboard.js"></script>

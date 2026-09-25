@@ -27,7 +27,12 @@ form.addEventListener("submit", async (event)=> {
         
     });
 
-    const result = await response.text();
+    const result = await response.json();
+
+    if(!result.ok) {
+        alert(result.message);
+        return;
+    }
     console.log(result);
 
 })

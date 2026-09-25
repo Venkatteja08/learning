@@ -20,6 +20,7 @@ async function startServer() {
 
     const db = client.db("learning");
     const userCollection = db.collection("users");
+    const orderCollection = db.collection("orders");
 
     app.post("/users", async (req,res) => {
         // const userData = req.body;
@@ -31,6 +32,23 @@ async function startServer() {
             role : "user"
         }
         //changes
+        if(!userData.userName || !userData.password || !userData.contact) {
+            return res.status(400).json({
+                message : "All fields are required"
+            })
+        }
+
+        const existingUser = await userCollection.findOne({
+            userName : userData.userName
+        });
+
+        if(existingUser) {
+            return res.status(409).json({
+                message : "User already exists"
+            })
+        }
+
+        console.log("Existing user:", existingUser);
         const hashedPassword = await bcrypt.hash(userData.password,10);
 
         userData.password = hashedPassword;
@@ -56,6 +74,8 @@ async function startServer() {
                 message : "Invalid Username or password"
             })
         }
+
+        
 
         const passwordMatch = await bcrypt.compare(loginData.password,user.password);
 
@@ -162,14 +182,107 @@ async function startServer() {
         
     })
 
-    app.get("/orders", authenticateToken, (req,res) => {
-        res.json({
-            message : "Orders fetched Succesfully",
-            orders : [
-                "Laptop","Mobile","Headphones"
-            ],
-            user : req.user.userName
+    app.post("/orders",authenticateToken, async(req,res) => {
+        const orderData = req.body;
+
+        if(!orderData.product || orderData.quantity <= 0) {
+            return res.status(400).json({
+                message : 'Product and valid Quantity are required'
+            });
+        }
+
+        const order = {
+            userId : req.user.userId,
+            product : orderData.product,
+            quantity : orderData.quantity
+        }
+
+        const result = await orderCollection.insertOne(order);
+        console.log(result);
+
+        res.status(201).json({
+            message : "Order placed Succesfully",
+            orderId : result.insertedId
         })
+       
+    })
+
+    app.delete("/orders/:orderId", authenticateToken, async (req,res) => {
+        const orderId = req.params.orderId;
+
+        const objectId = new ObjectId(orderId);
+
+
+        console.log("OrderId reveived", orderId);
+
+        const result = await orderCollection.deleteOne({
+            _id : objectId,
+            userId : req.user.userId
+        })
+
+        if(result.deletedCount == 0) {
+            return res.status(404).json({
+                message : "Order not found"
+            })
+        }
+
+        res.status(200).json({
+            message : "Order cancelled successfully"
+        });
+    })
+
+    app.put("/orders/:orderId",authenticateToken, async (req,res) => {
+
+        const orderId = req.params.orderId;
+
+        const objectId = new ObjectId(orderId);
+
+        if(req.body.quantity <= 0) {
+            return res.status(400).json({
+                message : "Quantity must be greater than 0"
+            })
+        }
+
+        const result = await orderCollection.updateOne(
+            {
+            _id : objectId,
+            userId : req.user.userId
+            },
+            {
+                $set: {
+                    quantity : req.body.quantity
+                }
+            }
+        );
+
+        res.status(200).json({
+            message: "Order quantity updated successfully"
+        });
+
+        console.log("Updated result" , result);
+       
+
+    })
+
+    app.get("/orders", authenticateToken, async (req,res) => {
+
+        const userId = req.user.userId;
+
+        const orders = await orderCollection.find({
+            userId : userId
+        }).toArray();
+
+        res.json({
+            message : "Orders Fetched Successfully",
+            orders : orders
+        })
+        // res.json({
+        //     message : "Orders fetched Succesfully",
+        //     orders : [
+        //         "Laptop","Mobile","Headphones"
+        //     ],
+        //     user : req.user.userName
+        // })
     })
    
     
